@@ -140,7 +140,7 @@ site_state: true
 # Value before `||` delimiter is the target permalink, value after `||` delimiter is the name of Font Awesome icon.
 social:
   GitHub: https://github.com/zenoxen || fab fa-github
-  #E-Mail: mailto:yourname@gmail.com || fa fa-envelope
+  E-Mail: mailto:zenox2105@gmail.com || fa fa-envelope
   #Weibo: https://weibo.com/yourname || fab fa-weibo
   #Google: https://plus.google.com/yourname || fab fa-google
   #Twitter: https://twitter.com/yourname || fab fa-twitter
@@ -205,7 +205,7 @@ footer:
     # Icon name in Font Awesome. See: https://fontawesome.com/icons
     name: fa fa-heart
     # If you want to animate the icon, set it to true.
-    animated: false
+    animated: true
     # Change the color of icon, using Hex Code.
     color: "#ff0000"
 
@@ -393,7 +393,7 @@ bookmark:
 
 # `Follow me on GitHub` banner in the top-right corner.
 github_banner:
-  enable: true
+  enable: false
   permalink: https://github.com/zenoxen
   title: 我的Github
 
@@ -564,7 +564,7 @@ comments:
   style: tabs
   # Choose a comment system to be displayed by default.
   # Available values: disqus | disqusjs | changyan | livere | gitalk | utterances
-  active: changyan
+  active: 
   # Setting `true` means remembering the comment system selected by the visitor.
   storage: true
   # Lazyload all comment systems.
@@ -581,7 +581,7 @@ comments:
 # For more information: https://disqus.com
 disqus:
   enable: false
-  shortname:
+  shortname: zenox
   count: true
 
 # DisqusJS
@@ -593,13 +593,13 @@ disqusjs:
   # For example:
   # api: https://disqus.skk.moe/disqus/
   api:
-  apikey: # Register new application from https://disqus.com/api/applications/
+  apikey: DRJQtNPf4H7Cx4jPNBdFLY2T60K5YSvtCvfeMNdNEKdZO5RqyFK6pdREoZ1zRH7S# Register new application from https://disqus.com/api/applications/
   shortname: # See: https://disqus.com/admin/settings/general/
 
 # Changyan
 # For more information: https://changyan.kuaizhan.com
 changyan:
-  enable: true
+  enable: false
   appid: cyvlXsb8W
   appkey: e952aabe2c397fe67ce941bd6e7e2345
 
@@ -611,18 +611,18 @@ livere_uid: # <your_uid>
 # For more information: https://gitalk.github.io
 gitalk:
   enable: false
-  github_id: # GitHub repo owner
-  repo: # Repository name to store issues
-  client_id: # GitHub Application Client ID
-  client_secret: # GitHub Application Client Secret
-  admin_user: # GitHub repo owner and collaborators, only these guys can initialize gitHub issues
+  github_id: ZenoXen# GitHub repo owner
+  repo: myblog-comment# Repository name to store issues
+  client_id: 3b7662dbc75662c89916# GitHub Application Client ID
+  client_secret: 3aa240270f5621908f2fdf5d37120b527ff3fcf1# GitHub Application Client Secret
+  admin_user: ZenoXen# GitHub repo owner and collaborators, only these guys can initialize gitHub issues
   distraction_free_mode: true # Facebook-like distraction free mode
   # When the official proxy is not available, you can change it to your own proxy address
   proxy: https://cors-anywhere.herokuapp.com/https://github.com/login/oauth/access_token # This is official proxy adress
   # Gitalk's display language depends on user's browser or system environment
   # If you want everyone visiting your site to see a uniform language, you can set a force language value
   # Available values: en | es-ES | fr | ru | zh-CN | zh-TW
-  language:
+  language: zh-CN
 
 # Utterances
 # For more information: https://utteranc.es
@@ -637,6 +637,16 @@ utterances:
 # Isso
 # For more information: https://posativ.org/isso/
 isso: # <data_isso>
+
+valine:
+  enable: true
+  appid: 18kXE9grlsG6iGdodFBPKRhS-gzGzoHsz
+  appkey: Cr75M3StnSKrVX6uAoGUkYKr
+  notify: true # mail notifier , https://github.com/xCss/Valine/wiki
+  verify: true # Verification code
+  placeholder: 评论两句吧
+  guest_info: nick,mail
+  pageSize: 10
 
 
 # ---------------------------------------------------------------
