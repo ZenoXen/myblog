@@ -120,7 +120,7 @@ Sitemap一般来说是一种xml文件，其中包含的是一个站点的结构�
 
 我之前尝试过用baidu的sitemap提交，一开始几次百度都成功读取了我的sitemap，但后来不知道啥原因，百度那边显示无法读取我的sitemap了，所以后来百度我换了API提交。所幸的是，谷歌的sitemap一直没有出过问题。
 
-谷歌的提交是通过[search console](https://search.google.com/search-console/about)，添加站点和验证站点的操作其实跟百度差不多，都是使用，这里就不深入介绍了。讲讲怎么让hexo自动生成sitemap，并提交给谷歌。
+谷歌的提交是通过[search console](https://search.google.com/search-console/about)，添加站点和验证站点的操作其实跟百度差不多，都是使用HTML标签认证，这里就不深入介绍了。讲讲怎么让hexo自动生成sitemap，并提交给谷歌。
 
 首先在你的hexo项目根目录下安装hexo-generator-sitemap，使用下面命令即可。
 
