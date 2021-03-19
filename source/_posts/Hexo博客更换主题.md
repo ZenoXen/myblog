@@ -1,5 +1,5 @@
 ---
-title: Hexo博客更换主题
+title: hexo博客更换主题
 date: 2021-02-11 14:01:50
 tags: [hexo]
 categories: Hexo博客系列
