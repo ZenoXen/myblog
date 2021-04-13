@@ -191,7 +191,194 @@ transition可以定义为global-transition的子元素。
 
 这个案例将完整讲述从流程抽象、配置，到实现的过程，是我从Spring实战第四版书上找到的，原书的代码只有一部分，我根据原有代码结合整个流程，实现了一遍。
 
+## Maven依赖
+
+注意除了SpringMVC依赖外，还需要引入SpringWebFlow的依赖，此外为了方便我们写View层的代码，也要引入JSTL。
+
+```xml
+<dependencies>
+    
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>5.2.12.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>5.2.12.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>5.2.12.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>5.2.12.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>5.2.12.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.springframework.webflow</groupId>
+      <artifactId>spring-webflow</artifactId>
+      <version>2.5.1.RELEASE</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.16</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>jstl</groupId>
+      <artifactId>jstl</artifactId>
+      <version>1.2</version>
+    </dependency>
+    
+  </dependencies>
+```
+
 ## 配置
+
+除了对SpringMVC进行配置以外，还需要对SpringWebFlow进行配置，下面将分别对各个配置文件进行展示。
+
+### web.xml
+
+这边只需要配置一个DispatcherServlet即可，可以顺手把Spring配置文件也指定了，比如这个例子中是/WEB-INF/applicationContext.xml
+
+```xml
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+    <display-name>Archetype Created Web Application</display-name>
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+  <servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <init-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>/WEB-INF/applicationContext.xml</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+
+  <welcome-file-list>
+    <welcome-file>/WEB-INF/jsp/index.jsp</welcome-file>
+  </welcome-file-list>
+</web-app>
+
+```
+
+### SpringMVC配置
+
+SpringMVC只需要简单给其配置一个视图解析器即可，我这里单独建了一个文件web-mvc.xml，将其放在classpath下。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+        <property name="prefix" value="/WEB-INF/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+    
+</beans>
+```
+
+### SpringWebFlow配置
+
+这个例子中，我将SpringWebFlow的配置全都写在classpath下的web-flow.xml中。
+
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:flow="http://www.springframework.org/schema/webflow-config"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/webflow-config
+           http://www.springframework.org/schema/webflow-config/spring-webflow-config.xsd">
+
+    //流程执行器，用来管理flowRegistry
+    <flow:flow-executor id="flowExecutor" flow-registry="flowRegistry"/>
+
+    //注册流程，这里我将所有的flow都放在了/WEB-INF/flows/pizza目录下，并且每个流程定义都以-flow.xml结尾
+    <flow:flow-registry id="flowRegistry" flow-builder-services="flowBuilderServices" base-path="/WEB-INF/flows/pizza">
+        <flow:flow-location-pattern value="*-flow.xml"/>
+    </flow:flow-registry>
+
+    //为了让SpringWebFlow的视图解析通过我们已经配置好的视图解析器，配置一个flow-builder-services，将view-factory-creator指定为一个自定义的mvcViewFactoryCreator
+    <flow:flow-builder-services id="flowBuilderServices" view-factory-creator="mvcViewFactoryCreator"/>
+
+    <bean id="mvcViewFactoryCreator" class="org.springframework.webflow.mvc.builder.MvcViewFactoryCreator">
+        <property name="viewResolvers" ref="viewResolver"/>
+    </bean>
+
+    //将flowExecutor指定给FlowHandlerAdapater，可以类比成SpringMVC的HandlerAdapter，即可以像访问普通Controller接口那样访问流程
+    <bean id="flowHandlerAdapter" class="org.springframework.webflow.mvc.servlet.FlowHandlerAdapter">
+        <property name="flowExecutor" ref="flowExecutor"/>
+    </bean>
+
+    //流程与Controller接口的映射，
+    <bean class="org.springframework.webflow.mvc.servlet.FlowHandlerMapping" id="flowHandlerMapping">
+        <property name="flowRegistry" ref="flowRegistry"/>
+    </bean>
+
+
+</beans>
+```
+
+### Spring主配置文件
+
+这边是最简单的，直接导入我们已经写好的web-mvc.xml和web-flow.xml即可，由于这个案例没有使用SpringBoot，所以顺手些一个组件扫描的配置。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <import resource="classpath:web-mvc.xml"/>
+    <import resource="classpath:web-flow.xml"/>
+
+    <context:component-scan base-package="org.zh.pizza"/>
+
+    <context:annotation-config/>
+
+
+</beans>xml
+```
 
 ## 流程实现
 
@@ -201,7 +388,7 @@ transition可以定义为global-transition的子元素。
 
 可以从这个Github仓库找到上述案例的完整代码。
 
-[SpringWebFlow案例](https://github.com/ZenoXen/pizza-flow-demo0)
+[SpringWebFlow案例](https://github.com/ZenoXen/pizza-flow-demo)
 
 # 参考文章
 
