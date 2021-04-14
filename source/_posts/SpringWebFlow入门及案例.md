@@ -360,7 +360,7 @@ SpringMVC只需要简单给其配置一个视图解析器即可，我这里单�
 
 ### Spring主配置文件
 
-这边是最简单的，直接导入我们已经写好的web-mvc.xml和web-flow.xml即可，由于这个案例没有使用SpringBoot，所以顺手些一个组件扫描的配置。
+这边是最简单的，直接导入我们已经写好的web-mvc.xml和web-flow.xml即可，由于这个案例没有使用SpringBoot，所以顺手写一个自动组件扫描的配置。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -377,12 +377,372 @@ SpringMVC只需要简单给其配置一个视图解析器即可，我这里单�
     <context:annotation-config/>
 
 
-</beans>xml
+</beans>
 ```
 
 ## 流程实现
 
+整个项目实际上是一个主流程，其内部包含了若干个子流程，下面就先介绍主流程spizza-flow。
+
+### spizza-flow主流程
+
+主流程的图示如下，简单介绍一下，首先进入identifyCustomer子流程，即识别用户，识别完成后，触发customerReady转移，如前文所介绍的，你可以把转移视为一种事件，即identifyCustomer这个流程触发了customerReady这个事件；后续的builderOrder、takePayment都是子流程，而saveOrder是一个动作状态，thankCustomer是一个视图状态，整个流程走完后，回到start处重新开始。
+
+![1](1.png)
+
+看看spizza-flow的xml定义，如下图所示。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+      http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd"
+      start-state="identifyCustomer">
+
+    //Order作为整个流程贯穿始终的参数，使用var标签定义
+    <var name="order" class="org.zh.pizza.domain.Order"/>
+
+    //identifyCustomer子流程，使用subflow属性来指向另一个流程
+    <subflow-state id="identifyCustomer" subflow="customer-flow">
+        //output可以理解为identifyCustomer这个流程的返回值,value属性为Spel表达式
+        <output name="customer" value="order.customer"/>
+        //触发customerReady转移，跳转至下一个子流程buildeOrder
+        <transition on="customerReady" to="buildOrder"/>
+    </subflow-state>
+
+    <subflow-state id="buildOrder" subflow="order-flow">
+        //由于builderOrder内部需要用到order对象，所以使用input标签作为该子流程的入参
+        <input name="order" value="order"/>
+        <transition on="orderCreated" to="takePayment"/>
+    </subflow-state>
+
+    <subflow-state id="takePayment" subflow="payment-flow">
+        <input name="order" value="order"/>
+        <transition on="paymentTaken" to="saveOrder"/>
+    </subflow-state>
+
+    <action-state id="saveOrder">
+        //evaluate可以用来处理一个Spel表达式
+        <evaluate expression="pizzaFlowActions.saveOrder(order)"/>
+        <transition to="thankCustomer"/>
+    </action-state>
+
+    <view-state id="thankCustomer">
+        <transition to="endState"/>
+    </view-state>
+
+    //整个流程结束
+    <end-state id="endState"/>
+
+    <global-transitions>
+        //如果在任意的流程中触发了cancel转移，则直接跳转至endState
+        <transition on="cancel" to="endState"/>
+    </global-transitions>
+</flow>
+```
+
+这里不关注Spel表达式背后的具体方法实现，如果你想要自己实现，可以直接到我的Github下载源码，地址贴在本文最后。
+
+接下来会分别介绍各个子流程。
+
+### identifyCustomer子流程
+
+identifyCustomer是这个子流程的id，而真正的流程定义是写在customer-flow.xml内的，这点需要注意一下。
+
+可以注意到，identifyCustomer子流程并没有任何输入变量，也就是说这个流程的角色是一个单纯的生产者。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+      http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    //定义子流程的全局变量customer
+    <var name="customer" class="org.zh.pizza.domain.Customer"/>
+
+    //进入welcome视图，这里需要注意以下一般视图状态对应的是同名的视图，即welcome状态对应welcome.jsp视图
+    <view-state id="welcome">
+        <transition on="phoneEntered" to="lookupCustomer"/>
+    </view-state>
+
+    <action-state id="lookupCustomer">
+        //检查用户输入的手机号是否存在，若不存在，触发CustomerNotFoundException，并转移至registrationForm视图；若用户输入的手机号存在，则转移至customerReady状态
+        <evaluate expression="pizzaFlowActions.lookupCustomer(requestParameters.phoneNumber)" result="customer"/>
+        <transition on-exception="org.zh.pizza.exception.CustomerNotFoundException" to="registrationForm"/>
+        <transition to="customerReady"/>
+    </action-state>
+
+    //注册表单视图，将customer绑定为该视图的model
+    <view-state id="registrationForm" model="customer">
+        //on-entry的作用是在进入这个视图时做一些操作，比如这个例子中，是将lookupCustomer中用户输入的手机号绑定到customer对象内
+        <on-entry>
+            <evaluate expression="customer.phoneNumber = requestParameters.phoneNumber"/>
+        </on-entry>
+        <transition to="checkDeliveryArea" on="submit"/>
+    </view-state>
+
+    //决策状态，通过checkDeliveryArea方法的执行结果，决定是进入addCustomer或者是deliveryWarning两个分支
+    <decision-state id="checkDeliveryArea">
+        <if test="pizzaFlowActions.checkDeliveryArea(customer.zipCode)"
+            then="addCustomer"
+            else="deliveryWarning"/>
+    </decision-state>
+
+    <view-state id="deliveryWarning">
+        <transition on="accept" to="addCustomer"/>
+    </view-state>
+
+    <action-state id="addCustomer">
+        <evaluate expression="pizzaFlowActions.addCustomer(customer)"/>
+        <transition to="customerReady"/>
+    </action-state>
+
+    //这里的end-state的id为cancel，这与外层主流程的global-transition的cancel转移是一样的，即这里触发cancel结束状态，回到原流程时，触发cancel转移
+    <end-state id="cancel"/>
+
+    //如果时进入的时customerReady的end-state，则返回原流程的同时，将customer作为返回值返回
+    <end-state id="customerReady">
+        <output name="customer"/>
+    </end-state>
+
+    <global-transitions>
+        <transition on="cancel" to="cancel"></transition>
+    </global-transitions>
+</flow>
+```
+
+来看看welcome视图的定义，实际上，在SpringWebFlow中，视图层要关心的东西并不多，只是作为一个人机交互的层次。但有一点时需要注意的，即即如何确定视图触发哪个转移（触发事件），以及怎么从视图回到原先的流程中，注意这里需要导入Spring标签库。
+
+```xml
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Administrator
+  Date: 2021/4/5
+  Time: 13:49
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false"%>
+<html>
+<head>
+    <title>Spizza</title>
+</head>
+<body>
+<h2>Welcome to Spizza!!!</h2>
+<form:form>
+    <input type="hidden" name="_flowExecutionKey" value="${flowExecutionKey}"/>
+    <input type="text" name="phoneNumber"/><br>
+    <input type="submit" name="_eventId_phoneEntered" value="Lookup Customer"/>
+</form:form>
+</body>
+</html>
+```
+
+现在来回答前面的两个问题，如何触发某个转移？将input的name设置为**_event_id_XXX**即可，其中XXX就是要触发的转移。如何从视图回到原先的流程里？在表单里设置一个隐藏域，name为_flowExecutionKey，值是从流程进入视图时自动带过来的，使用EL表达式获取它并设置到value里即可。注意这里一定得使用Spring标签库的form，否则flowExecutionKey和eventId都是不起作用的。
+
+再看看deliveryWarning视图，它没有表单，但是它使用的是a标签去控制跳转。
+
+```xml
+<%--
+  Created by IntelliJ IDEA.
+  User: Administrator
+  Date: 2021/4/5
+  Time: 14:15
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false"%>
+<html>
+<head>
+    <title>Spizza</title>
+</head>
+<body>
+<h2>Delivery Unavailable</h2>
+<p>The address is outside of our delivery area. You may still place the order, but you will need to pick it up yourself.</p>
+<a href="${flowExecutionUrl}&_eventId=accept">Continue, I'll pick up the order</a>
+<a href="${flowExecutionUrl}&_eventId=cancel">Never mind</a>
+</body>
+</html>
+```
+
+注意，这里a标签使用了flowExecutionUrl，它代表的原流程的地址，回到原流程的同时，我们一般还会触发一个事件，所以也带上_eventId。
+
+### buildOrder子流程
+
+buildOrder流程是与用户交互，生成订单的，用户可以订购一个或多个披萨。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+      http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    //将外部传进来的order对象作为本流程的全局参数
+    <input name="order" required="true"/>
+
+    <view-state id="showOrder">
+        <transition on="createPizza" to="createPizza"/>
+        <transition on="checkout" to="orderCreated"/>
+        <transition on="cancel" to="cancel"/>
+    </view-state>
+
+    //将flow作用域的pizza作为model，进入createPizza视图
+    <view-state id="createPizza" model="flowScope.pizza">
+        //进入createPizza视图时，自动new一个Pizza并放入flow作用域
+        <on-entry>
+            <set name="flowScope.pizza" value="new org.zh.pizza.domain.Pizza()"/>
+            //注意这里还执行了一下Topping类的静态方法asList，实际上Topping是个枚举类，即配料，将配料的枚举作为List放入view作用域
+            <evaluate expression="T(org.zh.pizza.domain.Topping).asList()" result="viewScope.toppingsList"/>
+        </on-entry>
+        <transition on="addPizza" to="showOrder">
+            <evaluate expression="order.addPizza(flowScope.pizza)"/>
+        </transition>
+        <transition on="cancel" to="showOrder"></transition>
+    </view-state>
+
+    <end-state id="cancel"/>
+
+    <end-state id="orderCreated"/>
+</flow>
+```
+
+先看看showOrder视图，这是buildOrder子流程的一个主要视图，主要是显示用户已经点过的披萨和配料，除了查看订单，还可以继续创建披萨或者直接进入支付流程。
+
+```xml
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Administrator
+  Date: 2021/4/5
+  Time: 15:01
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<html>
+<head>
+    <title>Spizza</title>
+</head>
+<body>
+<h2>Pizza Status</h2>
+<c:forEach var="pizza" items="${order.pizzas}">
+${pizza.size}:
+    <c:forEach items="${pizza.toppings}" var="topping">&&${topping}</c:forEach>
+    <br>
+</c:forEach>
+<a href="${flowExecutionUrl}&_eventId=createPizza">Create Pizza</a>
+<a href="${flowExecutionUrl}&_eventId=checkout">Checkout</a>
+<a href="${flowExecutionUrl}&_eventId=cancel">Cancel</a>
+</body>
+</html>
+```
+
+添加披萨的视图createPizza如下所示，注意form:form标签可以使用modelAttribute来绑定model对象，这边绑定的是流程传过来的Pizza对象。
+
+```xml
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Administrator
+  Date: 2021/4/5
+  Time: 14:20
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Spizza</title>
+</head>
+<body>
+<h2>Create Pizza</h2>
+<form:form modelAttribute="pizza">
+    <input type="hidden" name="_flowExecutionKey" value="${flowExecutionKey}"/>
+    <b>Size: </b><br>
+    <form:radiobutton path="size" label="Small (12-inch)" value="SMALL"/><br>
+    <form:radiobutton path="size" label="Medium (14-inch)" value="MEDIUM"/><br>
+    <form:radiobutton path="size" label="Large (16-inch)" value="LARGE"/><br>
+    <form:radiobutton path="size" label="Ginormous (20-inch)" value="GINORMOUS"/><br>
+    <br>
+    <b>Toppings: </b><br>
+    <form:checkboxes path="toppings" items="${toppingsList}"/><br><br>
+    <input type="submit" class="button" name="_eventId_addPizza" value="Continue"/>
+    <input type="submit" class="button" name="_eventId_cancel" value="Cancel"/>
+</form:form>
+</body>
+</html>
+```
+
+### takePayment子流程
+
+takePayment子流程实际上相比buildOrder而言，并没有什么太多的特别之处，这边的视图略过不提，如果你想看完整的代码，可以从Github上下载源码。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+      http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    <input name="order" required="true"/>
+
+    <view-state id="takePayment" model="flowScope.paymentDetails">
+        <on-entry>
+            <set name="flowScope.paymentDetails" value="pizzaFlowActions.generatePayment(order)"/>
+            <evaluate expression="T(org.zh.pizza.domain.PaymentType).asList()" result="viewScope.paymentTypeList"/>
+        </on-entry>
+        <transition on="paymentSubmitted" to="verifyPayment"/>
+        <transition on="cancel" to="cancel"/>
+    </view-state>
+
+    <action-state id="verifyPayment">
+        <evaluate expression="pizzaFlowActions.verifyPayment(flowScope.paymentDetails)"
+                  result="order.payment"/>
+        <transition to="paymentTaken"/>
+    </action-state>
+
+    <end-state id="cancel"/>
+
+    <end-state id="paymentTaken"/>
+</flow>
+```
+
 ## 运行效果
+
+进入流程后，第一个看到的页面为welcome.jsp。
+
+![2](2.png)
+
+如果没有注册过，进入registrationForm.jsp，注意这里输入的zipCode是会接收检查的。
+
+![3](3.png)
+
+若zipCode检查不通过，会进入deliveryWarning.jsp。
+
+![4](4.png)
+
+点击第一个超链接，进入showOrder.jsp，一开始没有任何订单，你可以点击Create Pizza来创建披萨，也可以点击Checkout前往支付。
+
+![5](5.png)
+
+如果点击Create Pizza，则需要选择披萨尺寸和配料。
+
+![6](6.png)
+
+重新回到订单页面，可以看到最新的订单信息已经同步过来了。
+
+![7](7.png)
+
+点击支付Checkout，系统会自动计算费用，我们自己要做的仅仅只是勾选支付方式。
+
+![8](8.png)
+
+完成整个流程，进入thankCustomer.jsp，点击finish，即可回到首页。
+
+![9](9.png)
+
+在这个过程中，点击任意的Cancel按钮，都会触发cancel转移，从而结束整个流程，返回首页。
 
 # 完整代码
 
