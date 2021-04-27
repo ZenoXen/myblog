@@ -564,7 +564,7 @@ comments:
   style: tabs
   # Choose a comment system to be displayed by default.
   # Available values: disqus | disqusjs | changyan | livere | gitalk | utterances
-  active: 
+  active: gitalk
   # Setting `true` means remembering the comment system selected by the visitor.
   storage: true
   # Lazyload all comment systems.
@@ -610,12 +610,12 @@ livere_uid: # <your_uid>
 # Gitalk
 # For more information: https://gitalk.github.io
 gitalk:
-  enable: false
-  github_id: ZenoXen# GitHub repo owner
-  repo: myblog-comment# Repository name to store issues
-  client_id: 3b7662dbc75662c89916# GitHub Application Client ID
-  client_secret: 3aa240270f5621908f2fdf5d37120b527ff3fcf1# GitHub Application Client Secret
-  admin_user: ZenoXen# GitHub repo owner and collaborators, only these guys can initialize gitHub issues
+  enable: true
+  github_id: ZenoXen
+  repo: zenoxen.github.io
+  client_id: 7bf3519a0e20c81be39b
+  client_secret: f94572895311d9744848de625e3356f156447811
+  admin_user: ZenoXen
   distraction_free_mode: true # Facebook-like distraction free mode
   # When the official proxy is not available, you can change it to your own proxy address
   proxy: https://cors-anywhere.herokuapp.com/https://github.com/login/oauth/access_token # This is official proxy adress
