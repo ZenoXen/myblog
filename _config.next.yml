@@ -616,7 +616,7 @@ gitalk:
   client_id: 7bf3519a0e20c81be39b
   client_secret: f94572895311d9744848de625e3356f156447811
   admin_user: ZenoXen
-  distraction_free_mode: true # Facebook-like distraction free mode
+  distraction_free_mode: true 
   # When the official proxy is not available, you can change it to your own proxy address
   # proxy: https://netnr-proxy.cloudno.de/https://github.com/login/oauth/access_token
   # Gitalk's display language depends on user's browser or system environment
