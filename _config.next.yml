@@ -616,7 +616,8 @@ gitalk:
   client_id: 7bf3519a0e20c81be39b
   client_secret: f94572895311d9744848de625e3356f156447811
   admin_user: ZenoXen
-  distraction_free_mode: true 
+  distraction_free_mode: true
+  proxy: https://47.97.206.64/login/oauth/access_token
   # When the official proxy is not available, you can change it to your own proxy address
   # Gitalk's display language depends on user's browser or system environment
   # If you want everyone visiting your site to see a uniform language, you can set a force language value
