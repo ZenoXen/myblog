@@ -610,7 +610,7 @@ livere_uid: # <your_uid>
 # Gitalk
 # For more information: https://gitalk.github.io
 gitalk:
-  enable: true
+  enable: false
   github_id: ZenoXen
   repo: zenoxen.github.io
   client_id: 7bf3519a0e20c81be39b
