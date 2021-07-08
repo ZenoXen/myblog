@@ -19,7 +19,7 @@ symbols_count_time:
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: https://blog.zenoxen.cn
+url: http://blog.zenoxen.cn
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
@@ -33,7 +33,7 @@ sitemap:
   
 baidu_url_submit:
   count: 100
-  host: https://blog.zenoxen.cn
+  host: http://blog.zenoxen.cn
   token: 31KgKvFHmgy3PMCL
   path: baidu_urls.txt
 
