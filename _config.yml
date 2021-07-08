@@ -129,3 +129,6 @@ deploy:
     branch: master
     repo: git@47.97.206.64:/var/repo/myblog.git
   - type: baidu_url_submitter
+  - type: git
+    branch: master
+    repo: git@github.com:ZenoXen/ZenoXen.github.io.git
