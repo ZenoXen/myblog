@@ -1,9 +1,17 @@
 ---
 title: PostgreSQL使用fdw实现跨库查询
-tags: [PostgreSQL, 数据库, 跨库查询]
-categories: [数据库, PostgreSQL]
-description: 在微服务架构中，可能有多个相关的表分布在不同的数据库中，但一般来说关联查询语法是不能跨数据库使用的。本文将介绍如何使用PostgreSQL的fdw插件进行跨库查询
+tags:
+  - PostgreSQL
+  - 数据库
+  - 跨库查询
+categories:
+  - 数据库
+  - PostgreSQL
+description: >-
+  在微服务架构中，可能有多个相关的表分布在不同的数据库中，但一般来说关联查询语法是不能跨数据库使用的。本文将介绍如何使用PostgreSQL的fdw插件进行跨库查询
+date: 2021-08-29 21:43:01
 ---
+
 
 # 前言
 
