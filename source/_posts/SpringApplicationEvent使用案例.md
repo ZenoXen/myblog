@@ -1,9 +1,15 @@
 ---
 title: SpringApplicationEvent使用案例
-tags: [Spring, ApplicationEvent, Java异步事件]
-categories: [Spring]
+tags:
+  - Spring
+  - ApplicationEvent
+  - Java异步事件
+categories:
+  - Spring
 description: Spring除了提供IOC、AOP功能，还有许多其他的功能，比如本文所要介绍的事件处理
+date: 2021-09-03 10:51:02
 ---
+
 
 # 前言
 
