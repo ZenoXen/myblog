@@ -3,10 +3,10 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: ZenoX的个人博客
-subtitle: '一个Java后端的笔记本'
-description: '先学会爱自己，再爱别人'
-keywords: ['Java','后端']
+title: ZenoX博客
+subtitle: '个人笔记本'
+description: '百无聊赖的生活'
+keywords: ['Java','后端','编程']
 author: ZenoX
 language: zh-CN
 timezone: 'Asia/Shanghai'
@@ -19,7 +19,7 @@ symbols_count_time:
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: http://blog.zenoxen.cn
+url: https://blog.zenoxen.cn
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
@@ -30,12 +30,6 @@ pretty_urls:
 # Sitemap
 sitemap: 
   path: sitemap.xml
-  
-baidu_url_submit:
-  count: 100
-  host: http://blog.zenoxen.cn
-  token: 31KgKvFHmgy3PMCL
-  path: baidu_urls.txt
 
 # Directory
 source_dir: source
@@ -125,10 +119,6 @@ search:
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
-  - type: git
-    branch: master
-    repo: git@47.97.206.64:/var/repo/myblog.git
-  - type: baidu_url_submitter
   - type: git
     branch: master
     repo: git@github.com:ZenoXen/ZenoXen.github.io.git
